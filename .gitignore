@@ -1,0 +1,14 @@
+# add files here to ignore for future commits
+
+
+# Windows
+
+
+
+# Mac OS
+.DS_Store
+
+
+# general
+pram.imi
+praw.ini
