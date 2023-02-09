@@ -1,40 +1,46 @@
-import praw
-import re
-import datetime
-import time
-import calendar
+import os, sys, time, datetime, re
+import praw # helper reddit API packages
+import prawcore
 
-class Test_Bot(object):
+class TestBot(object):
 
-  # build initalizing method after building working bot
-  def __init__(self, username, password, search_terms, time_range):
-    self.user_agent = "Test Bot 0.1"
-    self.reddit = praw.Reddit(user_agent=self.user_agent)
-    self.reddit.login(username,password)
-    self.time_range = time_range
-    self.search_terms = search_terms
+  # before committing to github, do not include config.yaml, use an example  
+  def __init__(self, reddit_client, subreddits, azure_client):
+    self.__reddit_client = reddit_client
+    self.__subreddits = subreddits
+    self.__azure_client = azure_client   
+
+  def validate_subreddits(self):
+    reddit, subreddits = self.__reddit_client, self.__subreddits
+    for sub in subreddits:
+      try:
+        reddit.subreddit(sub).id
+      except prawcore.exceptions.Redirect:
+        sys.exit("Invalid Subreddit: " + sub)
+      # except (praw.exceptions.PRAWException, prawcore.exceptions.PrawcoreException) as exception:
+      except praw.exceptions.PRAWException or prawcore.exceptions.PrawcoreException as exception:
+        print("Reddit API Error: ")
+        print(exception)
+
+  def stream_submissions(self):
+    # Monitor and process new Reddit submissions with the provided subreddits
+    reddit, subreddits, azure_client = self.__reddit_client, self.__subreddits, self.__azure_client
     
-    self.submission_list = []
+    subs = subreddits.keys()
+    subs_joined = "+".join(subs)
+    subreddit = reddit.subreddit(subs_joined)
     
+    # keep the app running
+    while True:
+      try:
+        for submission in subreddit.stream.submisions(pause_after=None, skip_existing=True):
+          process_submission(submission, subreddits, azure_client)
+      except KeyboardInterrupt:
+        sys.exit("\tStopping application...")
+      except (praw.exceptions.PRAWException, prawcore.exceptions.PrawcoreException) as exception:
+        print("Reddit API Error: \n" + exception)
 
-    # self.last_day_of_current_month = 0
-    # self.month_of_last_submission = 0
-    # self.submission_for_month = False
-  
-  
-  def __init__(self, search_terms, remaining_time):
-    self.reddit = praw.Reddit() # uses praw.imi file config
-    self.search_terms = search_terms
-    self.remaining_time = remaining_time
-
-  def create_submission_list(self):
-    for search_term in self.search_terms:
-      create_submission(search_term)
-
-  def create_submission(search_term):
+  def process_submission(self):
+    pass
     
-
-
-  # run at the end of every method to ensure that we exit on time
-  # def check
   

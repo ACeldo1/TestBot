@@ -10,5 +10,6 @@
 
 
 # general
-pram.imi
 praw.ini
+config.yaml
+
