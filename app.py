@@ -31,9 +31,9 @@ def main():
   subreddits = reddit_config[YAML_KEY_SUBREDDITS]
 
   # create reddit bot and pass clients to it to run features
-  test_bot = NotificationBot(reddit_client, subreddits, apprise_client, LOGGING)
-  test_bot.validate_subreddits()
-  test_bot.stream_submissions()
+  notification_bot = NotificationBot(reddit_client, subreddits, apprise_client, LOGGING)
+  notification_bot.validate_subreddits()
+  notification_bot.stream_submissions()
   
 # app configuration method with nested methods
 def app_config(CONFIG_PATH):
