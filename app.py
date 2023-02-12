@@ -1,19 +1,12 @@
-import os
-import sys
-import time
-import datetime
+import os, sys, time, datetime, re
+import apprise, praw, prawcore, yaml
 
-from test_bot import TestBot
-import email_config
-import re
-import datetime
-import yaml
-import praw
+from notification_bot import NotificationBot
 
 CONFIG_PATH = os.getenv("RPN_CONFIG", "config.yaml")
-# LOGGING = ""
+LOGGING = os.getenv("RPN_LOGGING", "FALSE")
 
-YAML_KEY_AZURE = "azure"
+YAML_KEY_APPRISE = "apprise"
 YAML_KEY_REDDIT = "reddit"
 YAML_KEY_CLIENT = "client"
 YAML_KEY_SUBREDDITS = "subreddits"
@@ -24,21 +17,21 @@ def main():
   # build configurations from config files
   config = app_config(CONFIG_PATH)
   reddit_config = config[YAML_KEY_REDDIT]
-  # azure_config = config[YAML_KEY_AZURE]
 
   # get various clients
-  azure_client = get_azure_client()
+  apprise_config = config[YAML_KEY_APPRISE]
+  apprise_client = get_apprise_client(apprise_config)
   reddit_client = get_reddit_client(
     reddit_config[YAML_KEY_CLIENT],
     reddit_config[YAML_KEY_SECRET],
     reddit_config[YAML_KEY_AGENT]
   )
   
-  # other necessary objects
+  #a other necessary objects
   subreddits = reddit_config[YAML_KEY_SUBREDDITS]
 
-  # create reddit bot and pass clients to it
-  test_bot = TestBot(reddit_client, subreddits, azure_client)
+  # create reddit bot and pass clients to it to run features
+  test_bot = NotificationBot(reddit_client, subreddits, apprise_client, LOGGING)
   test_bot.validate_subreddits()
   test_bot.stream_submissions()
   
@@ -56,7 +49,7 @@ def app_config(CONFIG_PATH):
     with open(CONFIG_PATH, "r") as config_yaml:
       config = None
       try:
-        config = yaml.safe_load(CONFIG_PATH)
+        config = yaml.safe_load(config_yaml)
       except yaml.YAMLError as exception:
         if hasattr(exception, "problem_mark"):
           mark = exception.problem_mark
@@ -97,14 +90,14 @@ def app_config(CONFIG_PATH):
       if not all(isinstance(term, str) for term in currSub):
         sys.exit("Invalid config: reddit -> subreddits -> \'" + currSub + "\' config only takes string entries")
       subreddits[conf] = [x.lower() for x in currSub]
-      print("r/" + conf + ": " + currSub + "\t")
+      print('\nr/' + conf + ': ', currSub)
   
     print("")
     reddit[YAML_KEY_SUBREDDITS] = {key.lower(): val for key, val in subreddits.items()}
     return config
 
   check_config_file()
-  config = load_config_obj
+  config = load_config_obj()
   return validate_config(config)
 
 # function that returns the reddit client through praw API
@@ -115,6 +108,12 @@ def get_reddit_client(client, secret, agent):
     user_agent = agent
   )
 
-# function that return the azure client for push notifications
-def get_azure_client(client):
-  return None
+# function that returns the apprise client for push notifications
+def get_apprise_client(config):
+  apprise_client = apprise.Apprise()
+  for conf in config:
+    apprise_client.add(conf)
+  return apprise_client
+
+if  __name__ == "__main__":
+  main()

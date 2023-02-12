@@ -13,3 +13,4 @@
 praw.ini
 config.yaml
 
+*.pyc
